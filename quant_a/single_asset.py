@@ -26,7 +26,16 @@ def analyze_single_asset(symbol, strategy_type='buy_and_hold', window=20):
     sharpe = calculate_sharpe_ratio(strategy_returns)
     max_dd = calculate_max_drawdown(strategy_values)
     
-    
+    # Number of observations
+    n_obs = len(prices)
+
+    # Number of trades (only for momentum)
+    n_trades = None
+    if strategy_type == 'momentum':
+        returns = prices.pct_change()
+        momentum = returns.rolling(window=window).mean()
+        position = (momentum > 0).astype(int)
+        n_trades = int((position.diff() == 1).sum())
 
     results = {
         'current_price': current_price,
