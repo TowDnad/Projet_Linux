@@ -26,6 +26,8 @@ def analyze_single_asset(symbol, strategy_type='buy_and_hold', window=20):
     sharpe = calculate_sharpe_ratio(strategy_returns)
     max_dd = calculate_max_drawdown(strategy_values)
     
+    
+
     results = {
         'current_price': current_price,
         'prices': prices,
