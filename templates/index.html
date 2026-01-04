@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label {
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        input, select, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .graph {
+            min-height: 400px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            color: #dc3545;
+            padding: 15px;
+            background: #f8d7da;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .last-update {
+            text-align: right;
+            color: #666;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Financial Dashboard</h1>
+        
+        <div class="section">
+            <h2>Single Asset Analysis</h2>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Symbol</label>
+                    <select id="singleSymbol"></select>
+                </div>
+                <div class="control-group">
+                    <label>Strategy</label>
+                    <select id="strategy">
+                        <option value="buy_and_hold">Buy and Hold</option>
+                        <option value="momentum">Momentum</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Window (for Momentum)</label>
+                    <input type="number" id="window" value="20" min="5" max="100">
+                </div>
+                <div class="control-group">
+                    <label>Backtest Period</label>
+                    <select id="years">
+                        <option value="1">1 Year</option>
+                        <option value="3">3 Years</option>
+                        <option value="5" selected>5 Years</option>
+                        <option value="10">10 Years</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>&nbsp;</label>
+                    <button onclick="loadSingleAsset()">Update</button>
+                </div>
+            </div>
+            <div id="singleError" class="error" style="display:none;"></div>
+            <div id="singleMetrics" class="metrics"></div>
+            <div id="singleGraph" class="graph"></div>
+            <div id="singleUpdate" class="last-update"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Portfolio Analysis</h2>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Symbols (comma-separated)</label>
+                    <div id="portfolioSymbols"></div>
+                </div>
+                <div class="control-group">
+                    <label>Weights (All or nothing)</label>
+                    <input type="text" id="portfolioWeights" placeholder="0.4,0.3,0.3" style="width: 200px;">
+                </div>
+                <div class="control-group">
+                    <label>&nbsp;</label>
+                    <button onclick="loadPortfolio()">Update</button>
+                </div>
+            </div>
+            <div id="portfolioError" class="error" style="display:none;"></div>
+            <div id="portfolioMetrics" class="metrics"></div>
+            <div id="portfolioGraph" class="graph"></div>
+            <div id="portfolioUpdate" class="last-update"></div>
+        </div>
+    </div>
+    
+    <script>
+        function showError(elementId, message) {
+            const errorDiv = document.getElementById(elementId);
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function hideError(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+        
+        function updateTimestamp(elementId) {
+            const now = new Date();
+            const timeString = now.toLocaleString();
+            document.getElementById(elementId).textContent = `Last updated: ${timeString}`;
+        }
+        
+        function loadSingleAsset() {
+            hideError('singleError');
+            const symbol = document.getElementById('singleSymbol').value;
+            const strategy = document.getElementById('strategy').value;
+            const window = document.getElementById('window').value;
+            const years = document.getElementById('years').value;
+            
+            document.getElementById('singleMetrics').innerHTML = '<div class="loading">Loading...</div>';
+            document.getElementById('singleGraph').innerHTML = '';
+            
+            fetch(`/api/single-asset?symbol=${symbol}&strategy=${strategy}&window=${window}&years=${years}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch data');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const metricsHtml = `
+                        <div class="metric-card">
+                            <div class="metric-label">Current Price</div>
+                            <div class="metric-value">$${data.current_price.toFixed(2)}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Sharpe Ratio</div>
+                            <div class="metric-value">${data.sharpe_ratio.toFixed(4)}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Max Drawdown</div>
+                            <div class="metric-value">${(data.max_drawdown * 100).toFixed(2)}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Observations</div>
+                            <div class="metric-value">${data.n_observations}</div>
+                        </div>
+                        ${data.n_trades !== null ? `
+                        <div class="metric-card">
+                            <div class="metric-label">Number of Trades</div>
+                            <div class="metric-value">${data.n_trades}</div>
+                        </div>` : ``}
+                    `;
+
+                    document.getElementById('singleMetrics').innerHTML = metricsHtml;
+                    
+                    const graphData = JSON.parse(data.graph);
+                    Plotly.newPlot('singleGraph', graphData.data, graphData.layout);
+                    
+                    updateTimestamp('singleUpdate');
+                })
+                .catch(error => {
+                    showError('singleError', `Error: ${error.message}`);
+                    document.getElementById('singleMetrics').innerHTML = '';
+                });
+        }
+        
+        function loadAssets(callback) {
+            fetch('/api/assets')
+                .then(res => res.json())
+                .then(assets => {
+                    const singleSelect = document.getElementById('singleSymbol');
+                    singleSelect.innerHTML = '';
+
+                    for (const [symbol, name] of Object.entries(assets)) {
+                        const option = document.createElement('option');
+                        option.value = symbol;
+                        option.textContent = `${symbol} – ${name}`;
+                        if (symbol === 'AAPL') option.selected = true;
+                        singleSelect.appendChild(option);
+                    }
+
+                    const portfolioDiv = document.getElementById('portfolioSymbols');
+                    portfolioDiv.innerHTML = '';
+
+                    for (const [symbol, name] of Object.entries(assets)) {
+                        const label = document.createElement('label');
+                        label.style.marginRight = '10px';
+
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = symbol;
+                        checkbox.checked = ['AAPL', 'MSFT', 'GOOGL'].includes(symbol);
+
+                        label.appendChild(checkbox);
+                        label.appendChild(document.createTextNode(` ${symbol}`));
+                        portfolioDiv.appendChild(label);
+                    }
+
+                    if (callback) callback();
+                });
+        }
+
+        function loadPortfolio() {
+            hideError('portfolioError');
+            const weightsStr = document.getElementById('portfolioWeights').value;
+            const weights = weightsStr ? weightsStr.split(',').map(w => w.trim()) : [];
+            const years = document.getElementById('years').value;
+            const symbols = Array.from(
+                document.querySelectorAll('#portfolioSymbols input:checked')
+            ).map(cb => cb.value);
+
+            if (symbols.length === 0) {
+                showError('portfolioError', 'Please select at least one asset');
+                return;
+            }
+
+            let url = '/api/portfolio?';
+
+            symbols.forEach(symbol => {
+                url += `symbols=${symbol}&`;
+            });
+
+            if (weights.length === symbols.length) {
+                weights.forEach(weight => {
+                    url += `weights=${weight}&`;
+                });
+            }
+
+            url += `years=${years}&`;
+            
+            document.getElementById('portfolioMetrics').innerHTML = '<div class="loading">Loading...</div>';
+            document.getElementById('portfolioGraph').innerHTML = '';
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch data');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let pricesHtml = '<div class="metric-card"><div class="metric-label">Current Prices</div><div class="metric-value" style="font-size:14px;">';
+                    for (const [symbol, price] of Object.entries(data.current_prices)) {
+                        pricesHtml += `${symbol}: $${price.toFixed(2)}<br>`;
+                    }
+                    pricesHtml += '</div></div>';
+                    
+                    const metricsHtml = pricesHtml + `
+                        <div class="metric-card">
+                            <div class="metric-label">Portfolio Sharpe</div>
+                            <div class="metric-value">${data.sharpe_ratio.toFixed(4)}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Portfolio Max Drawdown</div>
+                            <div class="metric-value">${(data.max_drawdown * 100).toFixed(2)}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Portfolio Volatility</div>
+                            <div class="metric-value">${(data.volatility * 100).toFixed(2)}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Observations</div>
+                            <div class="metric-value">${data.n_observations}</div>
+                        </div>
+                    `;
+                    document.getElementById('portfolioMetrics').innerHTML = metricsHtml;
+                    
+                    const graphData = JSON.parse(data.graph);
+                    Plotly.newPlot('portfolioGraph', graphData.data, graphData.layout);
+                    
+                    updateTimestamp('portfolioUpdate');
+                })
+                .catch(error => {
+                    showError('portfolioError', `Error: ${error.message}`);
+                    document.getElementById('portfolioMetrics').innerHTML = '';
+                });
+        }
+        
+        // Auto-refresh every 5 minutes
+        setInterval(() => {
+            loadSingleAsset();
+            loadPortfolio();
+        }, 300000);
+        
+        // Initial load
+        window.onload = () => {
+            loadAssets(() => {
+                loadSingleAsset();
+                loadPortfolio();
+            });
+        };
+    </script>
+</body>
+</html>

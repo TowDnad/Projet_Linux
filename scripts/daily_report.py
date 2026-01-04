@@ -7,6 +7,7 @@ import config as config
 from quant_a.single_asset import analyze_single_asset
 from quant_b.portfolio import analyze_portfolio
 
+# Generate daily report
 def generate_daily_report():
     os.makedirs(config.REPORTS_DIR, exist_ok=True)
     

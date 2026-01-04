@@ -1,3 +1,4 @@
+
 import sys
 sys.path.append('..')
 
@@ -5,10 +6,10 @@ from utils.data_fetcher import get_current_price, get_historical_data
 from utils.metrics import calculate_sharpe_ratio, calculate_max_drawdown
 from quant_a.strategies import buy_and_hold, momentum_strategy
 
-
-def analyze_single_asset(symbol, strategy_type='buy_and_hold', window=20):
+# Main function to analyze single asset strategies
+def analyze_single_asset(symbol, strategy_type='buy_and_hold', window=20, years=5):
     current_price = get_current_price(symbol)
-    historical_data = get_historical_data(symbol)
+    historical_data = get_historical_data(symbol, years)
     
     if historical_data is None or current_price is None:
         return None
@@ -36,13 +37,15 @@ def analyze_single_asset(symbol, strategy_type='buy_and_hold', window=20):
         momentum = returns.rolling(window=window).mean()
         position = (momentum > 0).astype(int)
         n_trades = int((position.diff() == 1).sum())
-
+    
     results = {
         'current_price': current_price,
         'prices': prices,
         'strategy_values': strategy_values,
         'sharpe_ratio': sharpe,
-        'max_drawdown': max_dd
+        'max_drawdown': max_dd,
+        'n_observations': n_obs,
+        'n_trades': n_trades
     }
     
     return results

@@ -9,15 +9,17 @@ from quant_b.portfolio import analyze_portfolio
 
 app = Flask(__name__)
 
-
+# Routes
 @app.route("/")
 def index():
     return render_template("index.html")
 
+# API Endpoints
 @app.route("/api/assets")
 def get_assets():
     return jsonify(config.AVAILABLE_ASSETS)
 
+# Single Asset Analysis Endpoint
 @app.route("/api/single-asset")
 def get_single_asset():
     symbol = request.args.get("symbol", config.SINGLE_ASSET)
@@ -30,7 +32,7 @@ def get_single_asset():
     if results is None:
         return jsonify({"error": "Failed to fetch data"}), 500
 
-    # 🔹 Normalisation base 100
+    # Normalisation base 100
     prices_norm = results["prices"] / results["prices"].iloc[0] * 100
     strategy_norm = results["strategy_values"] / results["strategy_values"].iloc[0] * 100
 
@@ -74,7 +76,7 @@ def get_single_asset():
 
     return jsonify(response_data)
 
-
+# Portfolio Analysis Endpoint
 @app.route("/api/portfolio")
 def get_portfolio():
     symbols = request.args.getlist("symbols")
@@ -95,7 +97,7 @@ def get_portfolio():
 
     fig = go.Figure()
 
-    # 🔹 Normalisation base 100 pour chaque actif
+    # Normalisation base 100 pour chaque actif
     for symbol, prices in results["historical_data"].items():
         prices_norm = prices / prices.iloc[0] * 100
 
@@ -107,7 +109,7 @@ def get_portfolio():
             line=dict(width=1.5)
         ))
 
-    # 🔹 Normalisation base 100 du portefeuille
+    # Normalisation base 100 du portefeuille
     portfolio_norm = (
         results["portfolio_value"] / results["portfolio_value"].iloc[0] * 100
     )

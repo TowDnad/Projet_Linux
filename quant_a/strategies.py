@@ -1,12 +1,13 @@
 import pandas as pd
 import numpy as np
 
+# Simple buy and hold strategy
 def buy_and_hold(prices, initial_capital=10000):
     shares = initial_capital / prices.iloc[0]
     portfolio_value = shares * prices
     return portfolio_value
 
-
+# Momentum strategy
 def momentum_strategy(prices, window=20, initial_capital=10000):
     returns = prices.pct_change()
     momentum = returns.rolling(window=window).mean()
