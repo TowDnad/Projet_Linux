@@ -13,7 +13,7 @@ REPORTS_DIR = 'data/daily_reports'
 
 # Flask settings
 FLASK_HOST = '0.0.0.0'
-FLASK_PORT = 8000
+FLASK_PORT = 80
 DEBUG = False
 
 # available assets for selection
@@ -26,5 +26,6 @@ AVAILABLE_ASSETS = {
     "TSLA": "Tesla",
     "NVDA": "NVIDIA"
 }
+
 
 
