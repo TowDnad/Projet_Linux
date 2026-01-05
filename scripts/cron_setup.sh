@@ -14,7 +14,7 @@ echo "Python path: $PYTHON_PATH"
 CRON_COMMAND="0 20 * * * cd $PROJECT_DIR && $PYTHON_PATH $SCRIPT_PATH >> $LOG_PATH 2>&1"
 
 # Install cron job (remove old entry if exists)
-(crontab -l 2>/dev/null | grep -v "daily_report_v2.py"; echo "$CRON_COMMAND") | crontab -
+(crontab -l 2>/dev/null | grep -v "daily_report.py"; echo "$CRON_COMMAND") | crontab -
 
 echo "Cron job installed successfully!"
 echo "Daily report will run at 20:00 (8pm) every day"
