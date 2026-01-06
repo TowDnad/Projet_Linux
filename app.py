@@ -89,8 +89,10 @@ def get_portfolio():
     else:
         weights = None
 
+    rebalance_freq = request.args.get("rebalance", None)
+    
     years = int(request.args.get("years", 5))
-    results = analyze_portfolio(symbols, weights, years)
+    results = analyze_portfolio(symbols, weights, years, rebalance_freq)
 
     if results is None:
         return jsonify({"error": "Failed to fetch data"}), 500

@@ -31,8 +31,44 @@ def calculate_portfolio_value(historical_data, weights, initial_capital=10000):
 
     return portfolio_value
 
+# Function to calculate portfolio value with rebalancing
+def calculate_portfolio_value_rebalanced(
+    historical_data,
+    weights,
+    initial_capital=10000,
+    rebalance_freq="M"  # "M" monthly, "Q" quarterly, "A" yearly
+):
+    """
+    Portfolio value with periodic rebalancing.
+    """
+    prices = pd.DataFrame(historical_data).dropna()
+
+    returns = prices.pct_change().dropna()
+    portfolio_value = pd.Series(index=returns.index, dtype=float)
+
+    current_weights = np.array(weights, dtype=float)
+    portfolio_value.iloc[0] = initial_capital
+
+    last_rebalance_date = returns.index[0]
+
+    for t in range(1, len(returns)):
+        date = returns.index[t]
+
+        # Apply returns
+        portfolio_value.iloc[t] = portfolio_value.iloc[t - 1] * (
+            1 + np.dot(current_weights, returns.iloc[t])
+        )
+
+        # Rebalance condition
+        if date.to_period(rebalance_freq) != last_rebalance_date.to_period(rebalance_freq):
+            current_weights = np.array(weights, dtype=float)
+            last_rebalance_date = date
+
+    return portfolio_value
+
+
 # Main function to analyze portfolio
-def analyze_portfolio(symbols, weights=None, years=5):
+def analyze_portfolio(symbols, weights=None, years=5, rebalance_freq=None):
     if weights is None:
         weights = np.ones(len(symbols)) / len(symbols)
     else:
@@ -44,9 +80,18 @@ def analyze_portfolio(symbols, weights=None, years=5):
     if not historical_data:
         return None
 
-    portfolio_value = calculate_portfolio_value(
-        historical_data, weights
-    )
+    if rebalance_freq:
+        portfolio_value = calculate_portfolio_value_rebalanced(
+            historical_data,
+            weights,
+            rebalance_freq=rebalance_freq
+        )
+    else:
+        portfolio_value = calculate_portfolio_value(
+            historical_data,
+            weights
+        )
+
 
     n_observations = len(portfolio_value)
     

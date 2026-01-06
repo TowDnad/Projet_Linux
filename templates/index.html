@@ -217,6 +217,16 @@
                     </div>
                 </div>
                 <div class="control-group">
+                    <label>Rebalancing</label>
+                    <select id="rebalanceFreq">
+                        <option value="">None</option>
+                        <option value="M">Monthly</option>
+                        <option value="Q">Quarterly</option>
+                        <option value="A">Annual</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
                     <label>Weights (All or nothing)</label>
                     <input type="text" id="portfolioWeights" placeholder="0.4,0.3,0.3" style="width: 200px;">
                 </div>
@@ -362,6 +372,7 @@
             const weightsStr = document.getElementById('portfolioWeights').value;
             const weights = weightsStr ? weightsStr.split(',').map(w => w.trim()) : [];
             const years = document.getElementById('years').value;
+            const rebalanceFreq = document.getElementById('rebalanceFreq').value;
             const symbols = Array.from(
                 document.querySelectorAll('#portfolioDropdown input:checked')
             ).map(cb => cb.value);
@@ -383,6 +394,11 @@
                     url += `weights=${weight}&`;
                 });
             }
+
+            if (rebalanceFreq) {
+                url += `rebalance=${rebalanceFreq}&`;
+            }
+
 
             url += `years=${years}&`;
             
