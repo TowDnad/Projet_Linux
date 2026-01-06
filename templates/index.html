@@ -125,6 +125,41 @@
             font-size: 12px;
             margin-top: 10px;
         }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown button {
+            width: 200px;
+            text-align: left;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .dropdown-content label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .dropdown-content input {
+            cursor: pointer;
+        }
+
     </style>
 </head>
 <body>
@@ -173,8 +208,13 @@
             <h2>Portfolio Analysis</h2>
             <div class="controls">
                 <div class="control-group">
-                    <label>Symbols (comma-separated)</label>
-                    <div id="portfolioSymbols"></div>
+                    <label>Portfolio Assets</label>
+                    <div class="dropdown">
+                        <button type="button" id="portfolioDropdownBtn">
+                            Select assets
+                        </button>
+                        <div class="dropdown-content" id="portfolioDropdown"></div>
+                    </div>
                 </div>
                 <div class="control-group">
                     <label>Weights (All or nothing)</label>
@@ -264,41 +304,58 @@
                 });
         }
         
-        function loadAssets(callback) {
-            fetch('/api/assets')
-                .then(res => res.json())
-                .then(assets => {
-                    const singleSelect = document.getElementById('singleSymbol');
-                    singleSelect.innerHTML = '';
+    function loadAssets(callback) {
+        fetch('/api/assets')
+            .then(res => res.json())
+            .then(assets => {
 
-                    for (const [symbol, name] of Object.entries(assets)) {
-                        const option = document.createElement('option');
-                        option.value = symbol;
-                        option.textContent = `${symbol} – ${name}`;
-                        if (symbol === 'AAPL') option.selected = true;
-                        singleSelect.appendChild(option);
-                    }
+                // Single asset dropdown
+                const singleSelect = document.getElementById('singleSymbol');
+                singleSelect.innerHTML = '';
 
-                    const portfolioDiv = document.getElementById('portfolioSymbols');
-                    portfolioDiv.innerHTML = '';
+                for (const [symbol, name] of Object.entries(assets)) {
+                    const option = document.createElement('option');
+                    option.value = symbol;
+                    option.textContent = `${symbol} – ${name}`;
+                    if (symbol === 'AAPL') option.selected = true;
+                    singleSelect.appendChild(option);
+                }
 
-                    for (const [symbol, name] of Object.entries(assets)) {
-                        const label = document.createElement('label');
-                        label.style.marginRight = '10px';
+                // Portfolio dropdown with checkboxes
+                const dropdown = document.getElementById('portfolioDropdown');
+                const button = document.getElementById('portfolioDropdownBtn');
 
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.value = symbol;
-                        checkbox.checked = ['AAPL', 'MSFT', 'GOOGL'].includes(symbol);
+                dropdown.innerHTML = '';
+                const selectedSymbols = new Set(['AAPL', 'MSFT', 'GOOGL']);
 
-                        label.appendChild(checkbox);
-                        label.appendChild(document.createTextNode(` ${symbol}`));
-                        portfolioDiv.appendChild(label);
-                    }
+                for (const [symbol, name] of Object.entries(assets)) {
+                    const label = document.createElement('label');
 
-                    if (callback) callback();
-                });
-        }
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = symbol;
+                    checkbox.checked = selectedSymbols.has(symbol);
+
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            selectedSymbols.add(symbol);
+                        } else {
+                            selectedSymbols.delete(symbol);
+                        }
+                        button.textContent = `Select assets (${selectedSymbols.size})`;
+                    });
+
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(`${symbol} – ${name}`));
+                    dropdown.appendChild(label);
+                }
+
+                button.textContent = `Select assets (${selectedSymbols.size})`;
+
+                if (callback) callback();
+            });
+    }
+
 
         function loadPortfolio() {
             hideError('portfolioError');
@@ -306,8 +363,9 @@
             const weights = weightsStr ? weightsStr.split(',').map(w => w.trim()) : [];
             const years = document.getElementById('years').value;
             const symbols = Array.from(
-                document.querySelectorAll('#portfolioSymbols input:checked')
+                document.querySelectorAll('#portfolioDropdown input:checked')
             ).map(cb => cb.value);
+
 
             if (symbols.length === 0) {
                 showError('portfolioError', 'Please select at least one asset');
@@ -375,7 +433,20 @@
                     document.getElementById('portfolioMetrics').innerHTML = '';
                 });
         }
-        
+        document.getElementById('portfolioDropdownBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const menu = document.getElementById('portfolioDropdown');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', () => {
+            document.getElementById('portfolioDropdown').style.display = 'none';
+        });
+        document.getElementById('portfolioDropdown').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+
         // Auto-refresh every 5 minutes
         setInterval(() => {
             loadSingleAsset();
