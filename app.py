@@ -32,7 +32,7 @@ def get_single_asset():
     if results is None:
         return jsonify({"error": "Failed to fetch data"}), 500
 
-    # Normalisation base 100
+    # Normalisation on base 100
     prices_norm = results["prices"] / results["prices"].iloc[0] * 100
     strategy_norm = results["strategy_values"] / results["strategy_values"].iloc[0] * 100
 
@@ -97,7 +97,7 @@ def get_portfolio():
 
     fig = go.Figure()
 
-    # Normalisation base 100 pour chaque actif
+    # Normalisation on base 100 for each asset
     for symbol, prices in results["historical_data"].items():
         prices_norm = prices / prices.iloc[0] * 100
 
@@ -109,7 +109,7 @@ def get_portfolio():
             line=dict(width=1.5)
         ))
 
-    # Normalisation base 100 du portefeuille
+    # Normalisation on base 100 for the whole portfolio
     portfolio_norm = (
         results["portfolio_value"] / results["portfolio_value"].iloc[0] * 100
     )

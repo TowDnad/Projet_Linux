@@ -37,8 +37,13 @@ AVAILABLE_ASSETS = {
     "BAC": "Bank of America",
     "KO": "Coca-Cola",
     "PEP": "PepsiCo",
-    "XOM": "Exxon Mobil"
+    "XOM": "Exxon Mobil",
+
+    # FX & Commodities
+    "EURUSD": "Euro / US Dollar",
+    "XAUUSD": "Gold (XAU/USD)"
 }
+
 
 
 
